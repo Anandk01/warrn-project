@@ -1,0 +1,625 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block header_title %}Responder Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <p class="text-muted mb-0 fs-5">Welcome back, <span class="fw-bold text-primary">
+            {{ current_user.ngo_name or current_user.username }}
+        </span></p>
+        {% if current_user.city or current_user.pincode %}
+        <small class="text-muted"><i class="fas fa-map-marker-alt me-1 text-danger"></i>{{ current_user.city }}{% if current_user.pincode %} &mdash; {{ current_user.pincode }}{% endif %}</small>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+        <span class="badge bg-white text-dark border shadow-sm p-2 px-3 fs-6">
+            <i class="fas fa-clock me-2 text-primary"></i>{{ reports|length }} Active Reports
+        </span>
+        {% if adoption_requests %}
+        <span class="badge bg-success text-white border shadow-sm p-2 px-3 fs-6">
+            <i class="fas fa-heart me-2"></i>{{ adoption_requests|length }} Adoption Request{% if adoption_requests|length != 1 %}s{% endif %}
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Dashboard Tabs -->
+<ul class="nav nav-tabs mb-0" id="dashboardTabs" role="tablist" style="border-bottom: 2px solid #e2e8f0;">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-semibold px-4 py-3" id="incidents-tab"
+            data-bs-toggle="tab" data-bs-target="#incidentsPane" type="button" role="tab">
+            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Incident Reports
+            <span class="badge bg-primary ms-2">{{ reports|length }}</span>
+        </button>
+    </li>
+    {% if current_user.responder_type == 'ngo' or current_user.role == 'admin' %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold px-4 py-3" id="adoptions-tab"
+            data-bs-toggle="tab" data-bs-target="#adoptionsPane" type="button" role="tab">
+            <i class="fas fa-heart me-2 text-success"></i>Adoption Requests
+            {% if adoption_requests %}
+            <span class="badge bg-success ms-2">{{ adoption_requests|length }}</span>
+            {% endif %}
+        </button>
+    </li>
+    {% endif %}
+</ul>
+
+<div class="tab-content" id="dashboardTabContent">
+<!-- ===== TAB 1: INCIDENT REPORTS ===== -->
+<div class="tab-pane fade show active" id="incidentsPane" role="tabpanel">
+<div class="card border-0 shadow-sm rounded-top-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 text-nowrap">ID</th>
+                        <th>Time Reported</th>
+                        <th>Animal & Status</th>
+                        <th>Condition</th>
+                        <th>Severity</th>
+                        <th>Responder</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr {% if report.escalated_to_ngo %}class="table-warning border-warning"{% endif %}>
+                        <td class="ps-4 fw-bold">
+                            #{{ report.id }}
+                            {% if current_user.pincode and report.pincode and current_user.pincode[:3] == report.pincode[:3] %}
+                            <br><small class="text-success fw-bold"><i class="fas fa-map-marker-alt"></i> Local Area</small>
+                            {% endif %}
+                            {% if report.description and 'Automated Detection' in report.description %}
+                            <br><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 mt-1" style="font-size: 0.7rem;">
+                                <i class="fas fa-robot me-1"></i>AI DETECTED
+                            </span>
+                            {% endif %}
+                            {% if report.escalated_to_ngo %}
+                            <br><small class="text-danger fw-bold"><i class="fas fa-exclamation-triangle"></i> ESCALATED</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-nowrap text-muted small">
+                            <div><i class="far fa-calendar me-1"></i> {{ report.timestamp.strftime('%Y-%m-%d') }}</div>
+                            <div><i class="far fa-clock me-1"></i> {{ report.timestamp.strftime('%H:%M') }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ report.animal_type }}</div>
+                            {% if report.ai_species_suggestion %}
+                            <div class="small text-info"><i class="fas fa-robot me-1"></i>AI: {{
+                                report.ai_species_suggestion }}</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ report.condition }}</td>
+                        <td>
+                            {% if report.accident_severity == 'critical' %}
+                            <span
+                                class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">CRITICAL</span>
+                            {% elif report.accident_severity == 'high' %}
+                            <span
+                                class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">HIGH</span>
+                            {% elif report.accident_severity == 'medium' %}
+                            <span
+                                class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">MEDIUM</span>
+                            {% else %}
+                            <span
+                                class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">LOW</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if report.responder %}
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-1 px-2 small me-2">
+                                    {{ report.responder.username[0] | upper }}
+                                </div>
+                                <span>{{ report.responder.username }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-muted fst-italic">Unclaimed</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4 align-middle">
+                            <form method="POST" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <button type="button" class="btn btn-outline-secondary btn-sm px-2 shadow-sm"
+                                    data-bs-toggle="modal" data-bs-target="#detailsModal" data-id="{{ report.id }}"
+                                    data-animal="{{ report.animal_type }}" data-condition="{{ report.condition }}"
+                                    data-severity="{{ report.accident_severity }}" data-desc="{{ report.description }}"
+                                    data-lat="{{ report.latitude }}" data-lon="{{ report.longitude }}"
+                                    data-image="{{ url_for('static', filename='uploads/' + report.image_filename) if report.image_filename else '' }}"
+                                    data-ai="{{ report.ai_species_suggestion or 'None' }}"
+                                    data-time="{{ report.timestamp.strftime('%Y-%m-%d %H:%M') }}"
+                                    title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+
+                                {% if current_user.role != 'reporter' %}
+                                {% if report.status == 'New' %}
+                                <button type="submit" formaction="{{ url_for('claim_report', report_id=report.id) }}"
+                                    class="btn btn-primary btn-sm fw-bold shadow-sm px-3 d-flex align-items-center">
+                                    <i class="fas fa-hand-paper me-2"></i> Accept Incident
+                                </button>
+                                {% elif report.status == 'Acknowledged' and report.responder_id == current_user.id %}
+                                <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm px-3 d-flex align-items-center"
+                                    data-bs-toggle="modal" data-bs-target="#resolveModal" data-id="{{ report.id }}">
+                                    <i class="fas fa-check-circle me-2"></i> Resolve Case
+                                </button>
+                                {% if current_user.responder_type == 'volunteer' %}
+                                <button type="submit" formaction="{{ url_for('escalate_report', report_id=report.id) }}"
+                                    class="btn btn-warning btn-sm fw-bold shadow-sm px-3 d-flex align-items-center ms-1">
+                                    <i class="fas fa-arrow-up me-2"></i> Escalate to NGO
+                                </button>
+                                {% endif %}
+                                {% else %}
+                                <div class="d-flex gap-1 align-items-center flex-wrap">
+                                    <span class="badge bg-light text-muted border py-2 px-3 shadow-sm">
+                                        {{ report.status }}
+                                    </span>
+                                    {% if report.status == 'Resolved' and current_user.role in ['admin', 'responder'] %}
+                                    <button type="button" class="btn btn-outline-success btn-sm fw-bold shadow-sm px-3 d-flex align-items-center"
+                                        data-bs-toggle="modal" data-bs-target="#adoptModal"
+                                        data-report-id="{{ report.id }}"
+                                        data-animal="{{ report.animal_type }}"
+                                        data-city="{{ report.city or '' }}"
+                                        data-pincode="{{ report.pincode or '' }}">
+                                        <i class="fas fa-heart me-1"></i> Post Adoption
+                                    </button>
+                                    {% if case_reports and report.id in case_reports %}
+                                    <a href="{{ url_for('download_case_report', case_report_id=case_reports[report.id].id) }}"
+                                       class="btn btn-outline-primary btn-sm fw-bold shadow-sm px-3 d-flex align-items-center">
+                                        <i class="fas fa-file-pdf me-1"></i> Download Report
+                                    </a>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                <span class="badge bg-light text-muted border py-2 px-3 shadow-sm">
+                                    {{ report.status }}
+                                </span>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr id="no-reports-row">
+                        <td colspan="7" class="text-center py-5">
+                            <div class="text-muted opacity-50">
+                                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                                <h5>All clear! No pending reports.</h5>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div><!-- /incidentsPane -->
+
+<!-- ===== TAB 2: ADOPTION REQUESTS ===== -->
+{% if current_user.responder_type == 'ngo' or current_user.role == 'admin' %}
+<div class="tab-pane fade" id="adoptionsPane" role="tabpanel">
+
+    <!-- === My Listings === -->
+    <div class="card border-0 shadow-sm rounded-top-0 mb-3">
+        <div class="card-header bg-light border-bottom d-flex align-items-center justify-content-between py-3 px-4">
+            <h6 class="mb-0 fw-bold"><i class="fas fa-list me-2 text-primary"></i>My Adoption Listings</h6>
+            <span class="badge bg-secondary">{{ my_listings|length }} post{% if my_listings|length != 1 %}s{% endif %}</span>
+        </div>
+        <div class="card-body p-0">
+        {% if my_listings %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Animal</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Posted On</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for listing in my_listings %}
+                    <tr class="{% if listing.is_adopted %}table-success{% endif %}">
+                        <td class="ps-4">
+                            <div class="fw-bold">{{ listing.animal_type }}</div>
+                            <div class="small text-muted text-truncate" style="max-width:200px;">{{ listing.description[:60] }}{% if listing.description|length > 60 %}...{% endif %}</div>
+                        </td>
+                        <td>
+                            {% if listing.city %}<span class="badge bg-light text-dark border me-1">{{ listing.city }}</span>{% endif %}
+                            {% if listing.pincode %}<span class="badge bg-light text-dark border">{{ listing.pincode }}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if listing.is_adopted %}
+                            <span class="badge bg-success py-2 px-3"><i class="fas fa-check me-1"></i>Adopted</span>
+                            {% else %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-2 px-3">Available</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">{{ listing.timestamp.strftime('%d %b %Y') }}</td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex gap-2 justify-content-end">
+                                {% if not listing.is_adopted %}
+                                <form method="POST" action="{{ url_for('mark_adoption_adopted', adoption_id=listing.id) }}"
+                                      onsubmit="return confirm('Mark this {{ listing.animal_type }} as Adopted? It will be removed from the public board.')">
+                                    <button type="submit" class="btn btn-success btn-sm fw-semibold">
+                                        <i class="fas fa-check-circle me-1"></i>Mark Adopted
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('delete_adoption_listing', adoption_id=listing.id) }}"
+                                      onsubmit="return confirm('Permanently delete this listing and ALL applications? This cannot be undone.')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">
+                                        <i class="fas fa-trash me-1"></i>Remove
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4 text-muted opacity-75">
+                <i class="fas fa-paw fa-2x mb-2 d-block"></i>
+                <p class="small mb-0">No active adoption listings. Resolve an incident and click "Post Adoption" to create one.</p>
+            </div>
+        {% endif %}
+        </div>
+    </div>
+
+    <!-- === Incoming Requests === -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light border-bottom d-flex align-items-center justify-content-between py-3 px-4">
+            <h6 class="mb-0 fw-bold"><i class="fas fa-inbox me-2 text-success"></i>Incoming Adoption Applications</h6>
+            <span class="badge bg-success">{{ adoption_requests|length }}</span>
+        </div>
+        <div class="card-body p-0">
+        {% if adoption_requests %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">#</th>
+                            <th>Applicant</th>
+                            <th>Contact</th>
+                            <th>Address</th>
+                            <th>Home</th>
+                            <th>Pets?</th>
+                            <th>Animal Listing</th>
+                            <th class="text-end pe-4">Date / PDF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for req in adoption_requests %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-muted">#{{ req.id }}</td>
+                        <td>
+                            <div class="fw-bold">{{ req.first_name }} {{ req.second_name or '' }}</div>
+                            <div class="small text-muted"><i class="fas fa-envelope me-1"></i>{{ req.email }}</div>
+                        </td>
+                        <td>
+                            <div class="small"><i class="fas fa-phone me-1 text-success"></i>{{ req.phone }}</div>
+                        </td>
+                        <td style="max-width:200px;">
+                            <div class="small text-muted text-truncate">{{ req.address }}</div>
+                            <div class="mt-1">
+                                {% if req.city %}<span class="badge bg-light text-dark border me-1">{{ req.city }}</span>{% endif %}
+                                {% if req.pincode %}<span class="badge bg-light text-dark border">{{ req.pincode }}</span>{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 py-2 px-3">
+                                {{ req.house_type or 'Unknown' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if req.has_other_pets == 'Yes' %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 py-2 px-3">Yes</span>
+                            {% else %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-2 px-3">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.listing %}
+                            <div class="fw-semibold">{{ req.listing.animal_type }}</div>
+                            <div class="small text-muted">Listing #{{ req.listing.id }}</div>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="small text-muted">{{ req.timestamp.strftime('%d %b %Y') }}</div>
+                            <div class="small text-muted mb-1">{{ req.timestamp.strftime('%H:%M') }}</div>
+                            {% if req.pdf_filename %}
+                            <a href="{{ url_for('static', filename='pdfs/' + req.pdf_filename) }}"
+                               class="btn btn-outline-primary btn-sm" target="_blank">
+                                <i class="fas fa-file-pdf me-1"></i>Download PDF
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="text-muted opacity-50">
+                    <i class="fas fa-heart fa-3x mb-3 d-block text-pink"></i>
+                    <h5>No adoption requests yet.</h5>
+                    <p class="small">When someone applies for an animal you posted, their details will appear here.</p>
+                    <a href="{{ url_for('view_adoptions') }}" class="btn btn-outline-primary btn-sm mt-2">
+                        <i class="fas fa-paw me-1"></i>View Adoption Board
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+        </div>
+    </div><!-- /incoming requests card -->
+</div><!-- /adoptionsPane -->
+{% endif %}
+
+</div><!-- /tab-content -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var detailsModal = document.getElementById('detailsModal')
+        if (detailsModal) {
+            detailsModal.addEventListener('show.bs.modal', function (event) {
+                // Button that triggered the modal
+                var button = event.relatedTarget
+
+                // Extract info from data-bs-* attributes
+                var id = button.getAttribute('data-id')
+                var animal = button.getAttribute('data-animal')
+                var condition = button.getAttribute('data-condition')
+                var severity = button.getAttribute('data-severity')
+                var desc = button.getAttribute('data-desc')
+                var lat = button.getAttribute('data-lat')
+                var lon = button.getAttribute('data-lon')
+                var imgSrc = button.getAttribute('data-image')
+                var ai = button.getAttribute('data-ai')
+                var time = button.getAttribute('data-time')
+
+                // Update the modal's content.
+                detailsModal.querySelector('#modal-id').textContent = '#' + id
+                detailsModal.querySelector('#modal-animal').textContent = animal
+                detailsModal.querySelector('#modal-condition').textContent = condition
+                detailsModal.querySelector('#modal-severity').textContent = severity ? severity.toUpperCase() : 'UNKNOWN'
+                detailsModal.querySelector('#modal-time').textContent = time
+                detailsModal.querySelector('#modal-ai').textContent = ai
+                detailsModal.querySelector('#modal-desc').textContent = desc
+
+                // Update Image
+                var imgElem = detailsModal.querySelector('#modal-image')
+                var placeHolder = detailsModal.querySelector('#no-image-placeholder')
+
+                if (imgSrc && imgSrc !== 'None' && imgSrc !== '') {
+                    imgElem.src = imgSrc
+                    imgElem.style.display = 'block'
+                    placeHolder.style.display = 'none'
+                } else {
+                    imgElem.style.display = 'none'
+                    placeHolder.style.display = 'flex'
+                }
+
+                // Update Location Map Link
+                var mapLink = `https://www.google.com/maps?q=${lat},${lon}`
+                var mapAnchor = detailsModal.querySelector('#modal-map-link')
+                mapAnchor.href = mapLink
+                detailsModal.querySelector('#modal-coords').textContent = `${lat}, ${lon}`
+
+                // Update Badge Color
+                var badge = detailsModal.querySelector('#modal-severity-badge')
+                badge.className = 'badge rounded-pill mb-2 '
+                if (severity === 'critical') badge.classList.add('bg-danger')
+                else if (severity === 'high') badge.classList.add('bg-warning')
+                else badge.classList.add('bg-info')
+            })
+        }
+
+        // Pass Report ID to Resolve Modal
+        var resolveModal = document.getElementById('resolveModal')
+        if (resolveModal) {
+            resolveModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget
+                var id = button.getAttribute('data-id')
+                var form = resolveModal.querySelector('form')
+                form.action = '/report/' + id + '/resolve_details'
+            })
+        }
+        // Wire up Adopt Modal
+        var adoptModal = document.getElementById('adoptModal')
+        if (adoptModal) {
+            adoptModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget
+                var reportId = button.getAttribute('data-report-id')
+                var animal = button.getAttribute('data-animal')
+                var city = button.getAttribute('data-city')
+                var pincode = button.getAttribute('data-pincode')
+                
+                document.getElementById('adopt-report-id').value = reportId
+                document.getElementById('adopt-animal').value = animal
+                document.getElementById('adopt-city').value = city
+                document.getElementById('adopt-pincode').value = pincode
+                
+                var form = adoptModal.querySelector('form')
+                form.action = '/adoption/post'
+            })
+        }
+    });
+</script>
+{% endblock %}
+
+{% block modals %}
+<!-- Report Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Details <span id="modal-id" class="text-muted ms-2 small"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Image Column -->
+                    <div class="col-md-6 mb-3">
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center overflow-hidden"
+                            style="height: 300px; border: 1px solid #dee2e6;">
+                            <img id="modal-image" src="" alt="Incident Image" class="img-fluid"
+                                style="display: none; max-height: 100%;">
+                            <div id="no-image-placeholder" class="text-muted text-center p-4">
+                                <i class="fas fa-image fa-3x mb-2"></i>
+                                <p>No image provided</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details Column -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <span id="modal-severity-badge" class="badge bg-danger rounded-pill mb-2">
+                                <span id="modal-severity"></span>
+                            </span>
+                            <h4 id="modal-animal" class="fw-bold mb-1"></h4>
+                            <p class="text-muted small mb-3">
+                                <i class="far fa-clock me-1"></i> Reported: <span id="modal-time"></span>
+                            </p>
+
+                            <h6 class="fw-bold text-uppercase small text-muted">Condition</h6>
+                            <p id="modal-condition" class="fs-5"></p>
+
+                            <h6 class="fw-bold text-uppercase small text-muted">AI Analysis</h6>
+                            <p><i class="fas fa-robot me-1 text-primary"></i> <span id="modal-ai"></span></p>
+
+                            <h6 class="fw-bold text-uppercase small text-muted">Description</h6>
+                            <p id="modal-desc" class="bg-light p-3 rounded small border"></p>
+
+                            <h6 class="fw-bold text-uppercase small text-muted">Location</h6>
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-light">
+                                <div>
+                                    <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                                    <span id="modal-coords" class="font-monospace"></span>
+                                </div>
+                                <a id="modal-map-link" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i>View Map
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Resolution Modal -->
+<div class="modal fade" id="resolveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Resolve Incident</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Final Outcome</label>
+                        <select name="outcome" class="form-select" required>
+                            <option value="Treated & Released">Treated & Released</option>
+                            <option value="Admitted to Hospital">Admitted to Hospital</option>
+                            <option value="Transferred to Shelter">Transferred to Shelter</option>
+                            <option value="Deceased">Deceased</option>
+                            <option value="Unable to Locate">Unable to Locate</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Resolution Notes</label>
+                        <textarea name="resolution_notes" class="form-control" rows="3"
+                            placeholder="Describe the action taken..." required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Upload Proof/Status Image</label>
+                        <input type="file" name="resolution_image" class="form-control" accept="image/*">
+                        <div class="form-text">Upload a photo of the resolved situation (optional). This will be emailed
+                            to the reporter.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check-circle me-2"></i>Confirm Resolution
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Adoption Posting Modal -->
+<div class="modal fade" id="adoptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #4f46e5, #10b981); color: white;">
+                <h5 class="modal-title"><i class="fas fa-heart me-2"></i>Post Animal for Adoption</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data" id="adoptForm">
+                <div class="modal-body">
+                    <p class="text-muted small mb-3"><i class="fas fa-info-circle me-1 text-primary"></i>
+                        This will create a public listing for this rescued animal on the Adoption Board.
+                        Anyone can view it and contact you to adopt.</p>
+                    <input type="hidden" name="report_id" id="adopt-report-id">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Animal Type</label>
+                        <input type="text" class="form-control" name="animal_type" id="adopt-animal" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Adoption Description</label>
+                        <textarea name="description" class="form-control" rows="3" required
+                            placeholder="Describe the animal's temperament, health status, age estimate..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">City</label>
+                            <input type="text" name="city" class="form-control" id="adopt-city" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Pincode</label>
+                            <input type="text" name="pincode" class="form-control" id="adopt-pincode" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Upload Photo</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <div class="form-text">Upload a clear recent photo to improve adoption chances.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold">
+                        <i class="fas fa-hand-holding-heart me-2"></i>Post for Adoption
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

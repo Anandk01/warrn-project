@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Home Map{% endblock %}
+
+{% block header_title %}Home Map - Report Incident{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card h-100 border-0 shadow-sm" style="min-height: 600px; display: flex;">
+            <div class="card-body p-0" id="map" style="flex: 1; border-radius: 12px; overflow: hidden; min-height: 400px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-4 report-panel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 fw-bold">Report an Incident</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">Use your current location or click on the map to drop a pin.</p>
+        <form id="reportForm" action="/report" method="POST" enctype="multipart/form-data">
+            <input type="hidden" id="latitude" name="latitude" required>
+            <input type="hidden" id="longitude" name="longitude" required>
+
+            <div class="divv">
+                <button type="button" id="useLocationBtn" class="btn btn-info btn-sm w-100 mb-2">Use My Current
+                    Location</button>&nbsp;&nbsp;
+                <p id="locationStatus" class="status-text small text-center">Please provide a location.</p>
+            </div>
+            <div class="mb-2">
+                <label for="animal_type" class="form-label">Animal Type:</label>
+                <select id="animal_type" name="animal_type" class="form-select" required>
+                    <option selected disabled value="">Choose...</option>
+                    <option value="Dog">Dog</option>
+                    <option value="Cat">Cat</option>
+                    <option value="Cattle">Cattle</option>
+                    <option value="Monkey">Monkey</option>
+                    <option value="Deer">Deer</option>
+                    <option value="Bird">Bird</option>
+                    <option value="Unknown">Unknown</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label for="condition" class="form-label">Condition:</label>
+                <select id="condition" name="condition" class="form-select" required>
+                    <option selected disabled value="">Choose...</option>
+                    <option value="Injured-Mobile">Injured - Mobile</option>
+                    <option value="Injured-Immobile">Injured - Immobile</option>
+                    <option value="Deceased">Deceased</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label for="image" class="form-label">Upload Image:</label>
+                <input type="file" id="image" name="image" class="form-control" accept="image/*" required>
+                <p id="imageStatus" class="status-text small mt-1">Please upload an image for verification.</p>
+            </div>
+            <div class="mb-2">
+                <label for="reporter_email" class="form-label">Your Email (Optional):</label>
+                <input type="email" id="reporter_email" name="reporter_email" class="form-control"
+                    placeholder="For status updates">
+            </div>
+            <div class="row">
+                <div class="col-6 mb-2">
+                    <label for="city" class="form-label">City:</label>
+                    <input type="text" id="city" name="city" class="form-control" required placeholder="e.g. Mumbai">
+                </div>
+                <div class="col-6 mb-2">
+                    <label for="pincode" class="form-label">Pincode:</label>
+                    <input type="text" id="pincode" name="pincode" class="form-control" required pattern="\d{6}" maxlength="6" placeholder="123456">
+                </div>
+            </div>
+            <div class="mb-2">
+                <label for="description" class="form-label">Brief Description:</label>
+                <textarea id="description" name="description" class="form-control" rows="2"></textarea>
+            </div>
+            <button type="submit" id="submitBtn" class="btn btn-primary mt-3 w-100 fw-bold" disabled>Submit Report</button>
+        </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}?v=2.0"></script>
+{% endblock %}

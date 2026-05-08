@@ -1,0 +1,32 @@
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# Database
+instance/
+*.db
+*.sqlite3
+
+# Large files & Weights
+*.pt
+*.pth
+*.zip
+*.rar
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/

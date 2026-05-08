@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<h4 class="text-center fw-bold mb-4">Account Login</h4>
+                <form method="POST" action="">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username (Email)<sup
+                                style="font-size: 14px; color:red;">*</sup></label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3 text-end">
+                        <a href="{{ url_for('forgot_password') }}" class="small text-decoration-none">Forgot
+                            Password?</a>
+                    </div>
+    <button type="submit" class="btn btn-primary w-100 fw-bold">Sign In</button>
+</form>
+<div class="text-center mt-4">
+    <small class="text-muted fs-6">
+        Need An Account? <a class="text-primary fw-bold text-decoration-none" href="{{ url_for('register') }}">Sign Up Now</a>
+    </small>
+</div>
+{% endblock %}

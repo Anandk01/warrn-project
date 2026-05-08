@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<h4 class="text-center fw-bold mb-2">Create Your Account</h4>
+<p class="text-center text-muted small mb-4">Use your email address — it will be used to receive notifications.</p>
+
+<form method="POST" action="">
+    <div class="mb-3">
+        <label for="username" class="form-label">Email Address <sup style="font-size: 14px; color:red;">*</sup></label>
+        <input type="email" class="form-control" id="username" name="username" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="city" class="form-label">City <sup style="font-size: 14px; color:red;">*</sup></label>
+            <input type="text" class="form-control" id="city" name="city" required>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="pincode" class="form-label">Pincode <sup style="font-size: 14px; color:red;">*</sup></label>
+            <input type="text" class="form-control" id="pincode" name="pincode" required>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="responder_type" class="form-label">Account Type</label>
+        <select class="form-select" id="responder_type" name="responder_type" required onchange="toggleNgoField(this.value)">
+            <option value="volunteer" selected>Local Volunteer</option>
+            <option value="ngo">NGO Responder / Representative</option>
+            <option value="adopter">Adopter (Looking for rescued pets)</option>
+        </select>
+    </div>
+
+    <div class="mb-4" id="ngo_name_group" style="display:none;">
+        <label for="ngo_name" class="form-label">Organisation / NGO Name <sup style="font-size:14px;color:red;">*</sup></label>
+        <input type="text" class="form-control" id="ngo_name" name="ngo_name" placeholder="e.g. Paws Rescue Hubli">
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100 fw-bold">Create Account</button>
+</form>
+
+<div class="text-center mt-4">
+    <small class="text-muted fs-6">
+        Already have an account? <a class="text-primary fw-bold text-decoration-none" href="{{ url_for('login') }}">Sign In</a>
+    </small>
+</div>
+
+<script>
+function toggleNgoField(val) {
+    document.getElementById('ngo_name_group').style.display = (val === 'ngo') ? 'block' : 'none';
+    document.getElementById('ngo_name').required = (val === 'ngo');
+}
+</script>
+{% endblock %}

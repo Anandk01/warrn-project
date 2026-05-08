@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block header_title %}NGO Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+    <div class="row g-4">
+        <!-- Add NGO Form -->
+        <div class="col-lg-5">
+            <div class="card h-100 border-0">
+                <div class="card-header bg-white bg-opacity-50 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="p-2 bg-primary bg-opacity-10 rounded-circle text-primary me-3">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <h5 class="mb-0">Add New Organization</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_ngo') }}">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small text-uppercase fw-bold">Organization Name</label>
+                            <input type="text" class="form-control bg-light border-0" name="name" required
+                                placeholder="e.g. Wildlife Rescue Center">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small text-uppercase fw-bold">Email</label>
+                                <input type="email" class="form-control bg-light border-0" name="email" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small text-uppercase fw-bold">Phone</label>
+                                <input type="text" class="form-control bg-light border-0" name="phone">
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-light rounded-3 mb-3">
+                            <h6 class="text-muted small text-uppercase mb-3 fw-bold"><i
+                                    class="fas fa-map-marker-alt me-2"></i>Location Details</h6>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="form-label small">Latitude</label>
+                                    <input type="number" step="any" class="form-control border-0 bg-white"
+                                        name="latitude" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Longitude</label>
+                                    <input type="number" step="any" class="form-control border-0 bg-white"
+                                        name="longitude" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small text-uppercase fw-bold">Specialization</label>
+                            <select class="form-select bg-light border-0" name="specialization">
+                                <option value="">General Support</option>
+                                <option value="Wildlife">Wildlife</option>
+                                <option value="Domestic Animals">Domestic Animals</option>
+                                <option value="Birds">Birds</option>
+                                <option value="Large Animals">Large Animals (Cattle/Horses)</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-muted small text-uppercase fw-bold">Coverage Radius ({{ 10 }}
+                                km)</label>
+                            <input type="range" class="form-range" name="coverage_radius" value="10" min="1" max="50"
+                                oninput="this.previousElementSibling.innerText = 'Coverage Radius (' + this.value + ' km)'">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="fas fa-save me-2"></i>Register NGO
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lists -->
+        <div class="col-lg-7">
+            <div class="card h-100 border-0">
+                <div
+                    class="card-header bg-white bg-opacity-50 border-0 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="p-2 bg-success bg-opacity-10 rounded-circle text-success me-3">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <h5 class="mb-0">Registered Partners</h5>
+                    </div>
+                    <span class="badge bg-light text-dark border">{{ ngos|length }} Active</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Organization</th>
+                                    <th>Contact</th>
+                                    <th>Coverage</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ngo in ngos %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">{{ ngo.name }}</div>
+                                        <div class="small text-muted">{{ ngo.specialization or 'General Support' }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small"><i class="far fa-envelope me-2 text-muted"></i>{{ ngo.email
+                                            }}</div>
+                                        {% if ngo.phone %}
+                                        <div class="small text-muted"><i
+                                                class="fas fa-phone me-2 text-muted opacity-50"></i>{{ ngo.phone }}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-bullseye me-2 text-muted"></i>
+                                            <span>{{ ngo.coverage_radius }} km</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge {{ 'bg-success bg-opacity-10 text-success' if ngo.active else 'bg-secondary bg-opacity-10 text-secondary' }}">
+                                            {{ 'Active' if ngo.active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="fas fa-folder-open fa-2x mb-3 d-block opacity-25"></i>
+                                        No NGOs registered yet
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

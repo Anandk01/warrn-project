@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Accident Detection{% endblock %}
+{% block header_title %}Accident Detection{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+
+    {% if mode == 'select' %}
+    <!-- Selection Screen -->
+    <div class="col-lg-12 text-center mb-5">
+        <h2 class="fw-bold text-dark">Select Detection Source</h2>
+        <p class="text-muted">Choose how you want to detect animals and accidents.</p>
+    </div>
+
+    <div class="col-md-5 mb-4">
+        <div class="card h-100 shadow border-0 hover-lift video-option-card">
+            <div class="card-body text-center p-5">
+                <div class="icon-circle bg-primary bg-opacity-10 text-primary mb-4 mx-auto">
+                    <i class="fas fa-video fa-3x"></i>
+                </div>
+                <h3 class="fw-bold">Live Camera</h3>
+                <p class="text-muted mb-4">Connect to your local webcam for real-time detection stream.</p>
+                <a href="{{ url_for('live_feed', mode='live') }}" class="btn btn-primary btn-lg w-100 rounded-pill">
+                    Start AI Detection
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5 mb-4">
+        <div class="card h-100 shadow border-0 hover-lift video-option-card">
+            <div class="card-body text-center p-5">
+                <div class="icon-circle bg-info bg-opacity-10 text-info mb-4 mx-auto">
+                    <i class="fas fa-file-video fa-3x"></i>
+                </div>
+                <h3 class="fw-bold">Upload Video</h3>
+                <p class="text-muted mb-4">Analyze pre-recorded MP4/AVI files for incidents.</p>
+                <button type="button" class="btn btn-info btn-lg w-100 rounded-pill text-white" data-bs-toggle="modal"
+                    data-bs-target="#uploadModal">
+                    Select Video File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Active Mode View -->
+    <div class="col-lg-10 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('live_feed', mode='select') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Selection
+            </a>
+            <div class="btn-group shadow-sm">
+                <a href="{{ url_for('live_feed', mode='live') }}"
+                    class="btn btn-{{ 'primary' if mode == 'live' else 'light' }}">
+                    <i class="fas fa-video me-2"></i>Live
+                </a>
+                <button type="button" class="btn btn-{{ 'primary' if mode == 'upload' else 'light' }}"
+                    data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    <i class="fas fa-file-video me-2"></i>Upload New
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-10">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+                <h4 class="mb-0">
+                    <i class="fas fa-{{ 'video' if mode == 'live' else 'film' }} me-2 text-danger"></i>
+                    {{ 'Live Animal Detection' if mode == 'live' else 'Video File Analysis' }}
+                </h4>
+                {% if mode == 'live' %}
+                <span class="badge bg-danger animate-pulse">LIVE</span>
+                {% else %}
+                <span class="badge bg-info">FILE ANALYSIS</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-0 bg-black text-center position-relative">
+                <!-- Video Stream -->
+                {% if mode == 'upload' and not filename %}
+                <div class="d-flex align-items-center justify-content-center" style="min-height: 480px;">
+                    <div class="text-white text-opacity-50">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                        <p>No video uploaded yet.</p>
+                        <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#uploadModal">Upload a Video</button>
+                    </div>
+                </div>
+                {% else %}
+                <img src="{{ url_for('video_feed', mode=mode) }}" class="img-fluid"
+                    style="width: 100%; min-height: 480px; object-fit: contain;" alt="Waiting for stream...">
+                {% endif %}
+
+                <div class="position-absolute bottom-0 start-0 w-100 p-3"
+                    style="background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);">
+                    <div class="text-white text-start">
+                        <small><i class="fas fa-robot me-1"></i> Powered by YOLOv8</small>
+                        {% if mode == 'upload' and filename %}
+                        <small class="ms-3 text-white-50"><i class="fas fa-file me-1"></i> {{ filename }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                <div class="row align-items-center">
+                    <div class="col-md-12">
+                        <p class="text-muted mb-0 small text-center">
+                            <span class="badge bg-success me-1">Green Box: Safe</span>
+                            <span class="badge bg-primary me-1">Blue Box: Vehicle</span>
+                            <span class="badge bg-danger">Red Box: ACCIDENT</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+
+
+<style>
+    .hover-lift {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .icon-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .animate-pulse {
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block modals %}
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Video for Analysis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Select Video File</label>
+                        <input type="file" class="form-control" name="video" accept="video/mp4,video/avi,video/mov"
+                            required>
+                        <div class="form-text">Supported formats: MP4, AVI, MOV</div>
+                    </div>
+                    <div class="alert alert-primary bg-opacity-10 border-0 small">
+                        <i class="fas fa-info-circle me-1"></i> The video will be processed frame-by-frame on the
+                        server. Large files may take a moment to start.
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload me-2"></i>Upload & Analyze
+                </button>
+        </div>
+        </form>
+    </div>
+</div>
+</div>
+
+<script>
+    // Automatically capture location for auto-reporting
+    document.addEventListener('DOMContentLoaded', function () {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                const data = new FormData();
+                data.append('latitude', position.coords.latitude);
+                data.append('longitude', position.coords.longitude);
+
+                fetch('/api/set_location', {
+                    method: 'POST',
+                    body: data
+                });
+            }, function (error) {
+                console.log("Location access denied or error: " + error.message);
+                // Fallback: Send a specific location for testing if real location fails
+                // "Dharwad JSS College" approx coords as requested by user scenario
+                const data = new FormData();
+                data.append('latitude', 15.4404);
+                data.append('longitude', 75.0145);
+                fetch('/api/set_location', { method: 'POST', body: data });
+            });
+        }
+    });
+</script>
+{% endblock %}

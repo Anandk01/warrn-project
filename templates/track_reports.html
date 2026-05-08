@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Track My Reports{% endblock %}
+{% block header_title %}Track My Reports{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-5">
+                    <h3 class="fw-bold mb-2">Track Your Reports</h3>
+                    <p class="text-muted">Enter your email address to see the status of incidents you have reported.</p>
+                </div>
+
+                <form method="POST" class="mb-5">
+                    <div class="input-group input-group-lg shadow-sm">
+                        <input type="email" name="email" class="form-control border-0 bg-light" placeholder="Enter your email address..."
+                            required value="{{ email }}">
+                        <button class="btn btn-primary px-4 fw-bold" type="submit">
+                            <i class="fas fa-search me-2"></i>Find Reports
+                        </button>
+                    </div>
+                </form>
+
+                {% if searched %}
+                {% if reports %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Found <span class="badge bg-primary">{{ reports|length }}</span> reports for
+                        <strong>{{ email }}</strong>
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Animal</th>
+                                <th>Status</th>
+                                <th class="text-end">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td class="fw-bold">#{{ report.id }}</td>
+                                <td>{{ report.timestamp.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ report.animal_type }}</td>
+                                <td>
+                                    {% if report.status == 'Resolved' %}
+                                    <span class="badge bg-success">Resolved</span>
+                                    {% elif report.status == 'Acknowledged' %}
+                                    <span class="badge bg-info">Response in Progress</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">Received</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill"
+                                        data-bs-toggle="modal" data-bs-target="#detailsModal" data-id="{{ report.id }}"
+                                        data-animal="{{ report.animal_type }}" data-condition="{{ report.condition }}"
+                                        data-severity="{{ report.accident_severity }}"
+                                        data-desc="{{ report.description }}" data-lat="{{ report.latitude }}"
+                                        data-lon="{{ report.longitude }}"
+                                        data-image="{{ url_for('static', filename='uploads/' + report.image_filename) if report.image_filename else '' }}"
+                                        data-ai="{{ report.ai_species_suggestion or 'None' }}"
+                                        data-time="{{ report.timestamp.strftime('%Y-%m-%d %H:%M') }}">
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 bg-light rounded">
+                    <i class="far fa-folder-open fa-3x text-muted mb-3 opacity-50"></i>
+                    <h5 class="text-muted">No reports found for this email.</h5>
+                    <p class="small text-muted">Check for typos or try a different email.</p>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Reusing the Modal from Dashboard -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Details <span id="modal-id" class="text-muted ms-2 small"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center overflow-hidden"
+                            style="height: 300px; border: 1px solid #dee2e6;">
+                            <img id="modal-image" src="" alt="Incident Image" class="img-fluid"
+                                style="display: none; max-height: 100%;">
+                            <div id="no-image-placeholder" class="text-muted text-center p-4">
+                                <i class="fas fa-image fa-3x mb-2"></i>
+                                <p>No image provided</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <span id="modal-severity-badge" class="badge bg-danger rounded-pill mb-2">
+                                <span id="modal-severity"></span>
+                            </span>
+                            <h4 id="modal-animal" class="fw-bold mb-1"></h4>
+                            <p class="text-muted small mb-3">
+                                <i class="far fa-clock me-1"></i> Reported: <span id="modal-time"></span>
+                            </p>
+                            <h6 class="fw-bold text-uppercase small text-muted">Condition</h6>
+                            <p id="modal-condition" class="fs-5"></p>
+                            <h6 class="fw-bold text-uppercase small text-muted">Description</h6>
+                            <p id="modal-desc" class="bg-light p-3 rounded small border"></p>
+                            <h6 class="fw-bold text-uppercase small text-muted">Location</h6>
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded border bg-light">
+                                <div><i class="fas fa-map-marker-alt text-danger me-2"></i><span
+                                        id="modal-coords"></span></div>
+                                <a id="modal-map-link" href="#" target="_blank"
+                                    class="btn btn-sm btn-outline-primary">View Map</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var detailsModal = document.getElementById('detailsModal')
+        if (detailsModal) {
+            detailsModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget
+                var id = button.getAttribute('data-id')
+                var animal = button.getAttribute('data-animal')
+                var condition = button.getAttribute('data-condition')
+                var severity = button.getAttribute('data-severity')
+                var desc = button.getAttribute('data-desc')
+                var lat = button.getAttribute('data-lat')
+                var lon = button.getAttribute('data-lon')
+                var imgSrc = button.getAttribute('data-image')
+                var time = button.getAttribute('data-time')
+
+                detailsModal.querySelector('#modal-id').textContent = '#' + id
+                detailsModal.querySelector('#modal-animal').textContent = animal
+                detailsModal.querySelector('#modal-condition').textContent = condition
+                detailsModal.querySelector('#modal-severity').textContent = severity ? severity.toUpperCase() : 'UNKNOWN'
+                detailsModal.querySelector('#modal-time').textContent = time
+                detailsModal.querySelector('#modal-desc').textContent = desc
+
+                var imgElem = detailsModal.querySelector('#modal-image')
+                var placeHolder = detailsModal.querySelector('#no-image-placeholder')
+                if (imgSrc && imgSrc !== 'None' && imgSrc !== '') {
+                    imgElem.src = imgSrc; imgElem.style.display = 'block'; placeHolder.style.display = 'none';
+                } else {
+                    imgElem.style.display = 'none'; placeHolder.style.display = 'flex';
+                }
+
+                var mapLink = `https://www.google.com/maps?q=${lat},${lon}`
+                detailsModal.querySelector('#modal-map-link').href = mapLink
+                detailsModal.querySelector('#modal-coords').textContent = `${lat}, ${lon}`
+
+                var badge = detailsModal.querySelector('#modal-severity-badge')
+                badge.className = 'badge rounded-pill mb-2 '
+                if (severity === 'critical') badge.classList.add('bg-danger')
+                else if (severity === 'high') badge.classList.add('bg-warning')
+                else badge.classList.add('bg-info')
+            })
+        }
+    });
+</script>
+{% endblock %}
