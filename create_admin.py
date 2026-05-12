@@ -13,6 +13,7 @@ def create_admin(username, password):
         db.session.commit()
         print(f"Admin user '{username}' created successfully!")
 
+
 if __name__ == '__main__':
     # Change these values to create your admin
     create_admin('admin@warrn.com', 'admin123')
